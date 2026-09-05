@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Sistema TedTech para impressão de etiquetas de Ordem de Serviço (60x30mm) na impressora XP-1271U.">
+<meta name="theme-color" content="#0097DA">
+<title>Etiquetas O.S. TedTech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --brand:#0097DA;
+    --brand-deep:#0077ad;
+    --ink:#1c2126;          /* graphite */
+    --ink-soft:#59636e;
+    --line:#dfe4ea;
+    --panel:#ffffff;
+    --bg:#eef2f6;           /* blue-biased neutral */
+    --bg-2:#e3e9f0;
+    --ok:#1f9d55;
+    --shadow:0 1px 2px rgba(20,33,48,.06),0 8px 24px rgba(20,33,48,.08);
+    --radius:14px;
+    --mono:"Inter",system-ui,sans-serif;
+    --display:"Montserrat",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#e9eef3; --ink-soft:#9aa6b2; --line:#2c343d;
+      --panel:#181d23; --bg:#0e1216; --bg-2:#151b21;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#e9eef3; --ink-soft:#9aa6b2; --line:#2c343d;
+    --panel:#181d23; --bg:#0e1216; --bg-2:#151b21;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:var(--mono);color:var(--ink);
+    background:var(--bg);
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:26px 20px 60px}
+
+  /* ---------- top bar ---------- */
+  header.app{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}
+  .app-id{display:flex;align-items:center;gap:12px}
+  .mark{
+    font-family:var(--display);font-weight:900;letter-spacing:-.02em;
+    font-size:22px;line-height:1;color:var(--ink);
+  }
+  .mark b{color:var(--brand)}
+  .app-id .sub{font-size:12px;color:var(--ink-soft);letter-spacing:.08em;text-transform:uppercase}
+  .theme-btn{
+    border:1px solid var(--line);background:var(--panel);color:var(--ink-soft);
+    border-radius:10px;padding:8px 12px;font:600 13px var(--mono);cursor:pointer;
+  }
+  .theme-btn:hover{color:var(--ink)}
+
+  h1{font-family:var(--display);font-weight:800;font-size:23px;margin:0 0 3px;letter-spacing:-.01em}
+  .lead{margin:0 0 22px;color:var(--ink-soft);font-size:14px;max-width:60ch}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  @media (max-width:820px){.grid{grid-template-columns:1fr}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .panel-h{display:flex;align-items:center;gap:8px;padding:16px 18px 0}
+  .panel-h .eyebrow{font:700 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--brand)}
+  .panel-b{padding:16px 18px 20px}
+
+  label.field{display:block;margin-bottom:14px}
+  label.field:last-child{margin-bottom:0}
+  .field .lab{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.02em}
+  .in{
+    width:100%;border:1px solid var(--line);background:var(--bg-2);color:var(--ink);
+    border-radius:10px;padding:11px 12px;font:600 15px var(--mono);
+  }
+  .in:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand)}
+  .row{display:flex;gap:12px}
+  .row>*{flex:1}
+
+  .btns{display:flex;gap:10px;margin-top:4px}
+  .btn{
+    flex:1;border:0;border-radius:11px;padding:13px 14px;font:800 14px var(--display);
+    letter-spacing:.01em;cursor:pointer;transition:transform .05s ease,filter .15s ease;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);flex:0 0 auto;padding:13px 16px}
+  .btn.ghost:hover{color:var(--ink)}
+
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:10px;line-height:1.5}
+
+  /* ---------- preview stage ---------- */
+  .stage{
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+    padding:22px 18px;background:
+      repeating-linear-gradient(45deg,var(--bg-2) 0 10px,transparent 10px 20px);
+    border-radius:var(--radius);border:1px solid var(--line);
+  }
+  .stage-cap{font-size:12px;color:var(--ink-soft);align-self:flex-start;padding-left:2px}
+  .zoombox{transform-origin:top center}
+
+  /* ================= THE LABEL (real mm) ================= */
+  #printArea{display:inline-block}
+  .label{
+    --sc:1;                 /* font scale */
+    width:60mm;height:30mm;
+    background:#fff;color:#000;
+    border:0.2mm solid #000;border-radius:1mm;
+    padding:1.4mm 2mm;
+    display:flex;flex-direction:column;
+    font-family:var(--display);
+    overflow:hidden;position:relative;
+  }
+  .lbl-top{
+    display:flex;align-items:center;justify-content:space-between;gap:1.5mm;
+    border-bottom:0.3mm solid #000;padding-bottom:0.9mm;
+  }
+  .lbl-logo{display:flex;align-items:center;gap:1mm;min-width:0}
+  .lbl-logo img{height:5mm;width:auto;object-fit:contain}
+  .lbl-logo.hipb img{filter:grayscale(1) contrast(2.2) brightness(.92)}
+  .lbl-word{font-weight:900;font-size:calc(3.9mm * var(--sc));letter-spacing:-.02em;line-height:1;white-space:nowrap}
+  .lbl-word i{font-style:normal}
+  .lbl-cnpj{font-family:var(--mono);font-weight:600;font-size:calc(1.7mm * var(--sc));text-align:right;line-height:1.15;white-space:nowrap}
+
+  .lbl-mid{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0.6mm 0}
+  .lbl-eyebrow{font-family:var(--mono);font-weight:700;font-size:calc(1.9mm * var(--sc));letter-spacing:.14em;text-transform:uppercase}
+  .lbl-os{display:flex;align-items:baseline;justify-content:center;gap:1.4mm;margin-top:.2mm}
+  .lbl-os .n{font-weight:900;font-size:calc(7.4mm * var(--sc));line-height:.95;letter-spacing:-.01em}
+  .lbl-os .tag{font-family:var(--mono);font-weight:700;font-size:calc(2.3mm * var(--sc))}
+  .lbl-date{font-family:var(--mono);font-weight:600;font-size:calc(2.4mm * var(--sc));margin-top:.4mm}
+  .lbl-date b{font-weight:800}
+
+  .lbl-foot{
+    border-top:0.3mm solid #000;padding-top:0.7mm;
+    font-family:var(--mono);font-weight:700;
+    font-size:calc(2.05mm * var(--sc));line-height:1.2;
+    display:flex;align-items:center;gap:1mm;flex-wrap:wrap;
+  }
+  .lbl-foot .dot{opacity:.7}
+
+  /* ---------- settings ---------- */
+  details.settings{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  details.settings summary{
+    list-style:none;cursor:pointer;padding:15px 18px;font:800 14px var(--display);
+    display:flex;align-items:center;gap:9px;color:var(--ink);
+  }
+  details.settings summary::-webkit-details-marker{display:none}
+  .chev{color:var(--brand);transition:transform .2s}
+  details[open] .chev{transform:rotate(90deg)}
+  .settings-b{padding:2px 18px 20px;border-top:1px solid var(--line)}
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:16px}
+  @media (max-width:560px){.settings-grid{grid-template-columns:1fr}}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg button{
+    border:1px solid var(--line);background:var(--bg-2);color:var(--ink-soft);
+    border-radius:9px;padding:8px 12px;font:600 13px var(--mono);cursor:pointer
+  }
+  .seg button[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .check{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);font-weight:600;cursor:pointer}
+  .check input{width:17px;height:17px;accent-color:var(--brand)}
+  .file{font-size:13px}
+  .rng{display:flex;align-items:center;gap:10px}
+  .rng input[type=range]{flex:1;accent-color:var(--brand)}
+  .rng .val{font:600 13px var(--mono);color:var(--ink-soft);min-width:44px;text-align:right}
+  .save-note{font-size:12px;color:var(--ok);font-weight:600;margin-top:14px;opacity:0;transition:opacity .2s}
+  .save-note.show{opacity:1}
+
+  footer.app{margin-top:28px;font-size:12px;color:var(--ink-soft);text-align:center;line-height:1.6}
+
+  /* ================= PRINT ================= */
+  @media print{
+    body{background:#fff}
+    body *{visibility:hidden}
+    #printArea,#printArea *{visibility:visible}
+    #printArea{position:absolute;left:0;top:0;margin:0}
+    .label{border:0 !important;border-radius:0 !important}
+    .label,.label *{color:#000 !important;border-color:#000 !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="app-id">
+      <span class="mark">Ted<b>Tech</b></span>
+      <span class="sub">Informática</span>
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button">Tema</button>
+  </header>
+
+  <h1>Etiquetas de Ordem de Serviço</h1>
+  <p class="lead">Preencha o número da O.S. e a data de entrada, confira o preview em tamanho real e imprima na XP-1271U. Logo e telefone entram automaticamente em toda etiqueta.</p>
+
+  <div class="grid">
+    <!-- FORM -->
+    <section class="panel">
+      <div class="panel-h"><span class="eyebrow">Nova etiqueta</span></div>
+      <div class="panel-b">
+        <div class="row">
+          <label class="field">
+            <span class="lab">Nº da O.S.</span>
+            <input class="in" id="osNum" inputmode="numeric" value="1">
+          </label>
+          <label class="field">
+            <span class="lab">Data de entrada</span>
+            <input class="in" id="osDate" type="date">
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="lab">Cópias</span>
+          <input class="in" id="copies" type="number" min="1" max="20" value="1">
+        </label>
+
+        <div class="btns">
+          <button class="btn primary" id="printBtn" type="button">Imprimir etiqueta</button>
+          <button class="btn ghost" id="nextBtn" type="button" title="Salvar e avançar o número">Próxima →</button>
+        </div>
+        <p class="hint">Ao imprimir, o número avança sozinho para a próxima O.S. Na janela de impressão, escolha a <b>XP-1271U</b>, margens <b>Nenhuma</b> e tamanho <b>60&nbsp;×&nbsp;30&nbsp;mm</b> (ou o papel do rótulo).</p>
+      </div>
+    </section>
+
+    <!-- PREVIEW -->
+    <section>
+      <div class="stage">
+        <span class="stage-cap">Preview — tamanho real (60 × 30 mm)</span>
+        <div class="zoombox" id="zoombox">
+          <div id="printArea">
+            <div class="label" id="label">
+              <div class="lbl-top">
+                <div class="lbl-logo" id="lblLogo">
+                  <span class="lbl-word" id="lblWord">Ted<i>Tech</i></span>
+                </div>
+                <div class="lbl-cnpj" id="lblCnpj">CNPJ 22.052.313/0001-26</div>
+              </div>
+              <div class="lbl-mid">
+                <span class="lbl-eyebrow">Ordem de Serviço</span>
+                <div class="lbl-os"><span class="tag">Nº</span><span class="n" id="lblNum">0001</span></div>
+                <div class="lbl-date">Entrada: <b id="lblDate">05/09/2026</b></div>
+              </div>
+              <div class="lbl-foot" id="lblFoot"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- SETTINGS -->
+  <details class="settings">
+    <summary><span class="chev">▶</span> Configurações da marca &amp; do rótulo</summary>
+    <div class="settings-b">
+      <div class="settings-grid">
+        <label class="field">
+          <span class="lab">Telefone (fixo)</span>
+          <input class="in" id="cfgTel" value="(24) 3365-1990">
+        </label>
+        <label class="field">
+          <span class="lab">WhatsApp</span>
+          <input class="in" id="cfgWpp" value="(24) 98827-6051">
+        </label>
+        <label class="field">
+          <span class="lab">Site (rodapé)</span>
+          <input class="in" id="cfgSite" value="tedtech.com.br">
+        </label>
+        <label class="field">
+          <span class="lab">Mostrar no rodapé</span>
+          <div class="seg" id="footMode">
+            <button type="button" data-m="both" aria-pressed="true">Fixo + Zap</button>
+            <button type="button" data-m="wpp">Só WhatsApp</button>
+            <button type="button" data-m="tel">Só fixo</button>
+          </div>
+        </label>
+
+        <label class="field">
+          <span class="lab">Logo</span>
+          <input class="in file" id="logoFile" type="file" accept="image/*">
+        </label>
+        <label class="field">
+          <span class="lab">Opções do topo</span>
+          <div style="display:flex;flex-direction:column;gap:9px;padding-top:4px">
+            <label class="check"><input type="checkbox" id="cfgHiPB" checked> Logo em alto contraste (P&amp;B p/ térmica)</label>
+            <label class="check"><input type="checkbox" id="cfgCnpj" checked> Mostrar CNPJ no topo</label>
+            <label class="check"><input type="checkbox" id="cfgSiteFoot"> Mostrar site no rodapé</label>
+          </div>
+        </label>
+
+        <label class="field">
+          <span class="lab">Largura do rótulo</span>
+          <div class="rng"><input type="range" id="cfgW" min="30" max="110" step="1" value="60"><span class="val" id="cfgWv">60 mm</span></div>
+        </label>
+        <label class="field">
+          <span class="lab">Altura do rótulo</span>
+          <div class="rng"><input type="range" id="cfgH" min="20" max="80" step="1" value="30"><span class="val" id="cfgHv">30 mm</span></div>
+        </label>
+        <label class="field">
+          <span class="lab">Tamanho do texto</span>
+          <div class="rng"><input type="range" id="cfgScale" min="0.7" max="1.4" step="0.02" value="1"><span class="val" id="cfgScalev">100%</span></div>
+        </label>
+        <label class="field">
+          <span class="lab">Padrão do número</span>
+          <div class="rng"><input type="range" id="cfgPad" min="1" max="6" step="1" value="4"><span class="val" id="cfgPadv">0001</span></div>
+        </label>
+      </div>
+
+      <div class="btns" style="margin-top:18px;max-width:340px">
+        <button class="btn ghost" id="resetLogo" type="button">Remover logo</button>
+        <button class="btn ghost" id="resetAll" type="button">Restaurar padrão</button>
+      </div>
+      <p class="save-note" id="saveNote">✓ Configurações salvas neste computador</p>
+    </div>
+  </details>
+
+  <footer class="app">
+    TedTech Informática — Rua Coronel Carvalho, 404, Angra dos Reis/RJ<br>
+    As configurações ficam salvas neste navegador. Nada é enviado para fora.
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const LS = "tedtech_etiquetas_v1";
+
+  const defaults = {
+    counter:1, pad:4, tel:"(24) 3365-1990", wpp:"(24) 98827-6051",
+    site:"tedtech.com.br", footMode:"both", hipb:true, showCnpj:true,
+    showSite:false, w:60, h:30, scale:1, logo:null
+  };
+  let cfg = Object.assign({}, defaults);
+  try{ const s = JSON.parse(localStorage.getItem(LS)||"{}"); cfg = Object.assign(cfg, s); }catch(e){}
+
+  function save(){
+    try{ localStorage.setItem(LS, JSON.stringify(cfg)); flash(); }catch(e){}
+  }
+  let flashT;
+  function flash(){ const n=$("saveNote"); n.classList.add("show"); clearTimeout(flashT); flashT=setTimeout(()=>n.classList.remove("show"),1400); }
+
+  // ---- date helpers ----
+  function todayISO(){ const d=new Date(); const o=d.getTimezoneOffset(); const l=new Date(d-o*60000); return l.toISOString().slice(0,10); }
+  function fmtBR(iso){ if(!iso) return ""; const p=iso.split("-"); return p.length===3? `${p[2]}/${p[1]}/${p[0]}` : iso; }
+  function padNum(n){ n=String(parseInt(n,10)||0); return n.padStart(cfg.pad,"0"); }
+
+  // ---- render label ----
+  function renderFoot(){
+    const foot=$("lblFoot"); foot.innerHTML="";
+    const parts=[];
+    if(cfg.footMode==="both"){ parts.push(cfg.tel); parts.push(cfg.wpp+" WhatsApp"); }
+    else if(cfg.footMode==="wpp"){ parts.push(cfg.wpp+" WhatsApp"); }
+    else { parts.push(cfg.tel); }
+    if(cfg.showSite && cfg.site) parts.push(cfg.site);
+    parts.forEach((p,i)=>{
+      if(i>0){ const d=document.createElement("span"); d.className="dot"; d.textContent="•"; foot.appendChild(d); }
+      const s=document.createElement("span"); s.textContent=p; foot.appendChild(s);
+    });
+  }
+  function render(){
+    const label=$("label");
+    label.style.width=cfg.w+"mm";
+    label.style.height=cfg.h+"mm";
+    label.style.setProperty("--sc", cfg.scale);
+    $("lblNum").textContent=padNum($("osNum").value);
+    $("lblDate").textContent=fmtBR($("osDate").value);
+    $("lblCnpj").style.display = cfg.showCnpj ? "" : "none";
+    // logo
+    const lg=$("lblLogo");
+    lg.classList.toggle("hipb", cfg.hipb);
+    if(cfg.logo){
+      lg.innerHTML = '<img alt="logo" src="'+cfg.logo+'">';
+    }else{
+      lg.innerHTML = '<span class="lbl-word">Ted<i>Tech</i></span>';
+    }
+    renderFoot();
+    updatePageStyle();
+  }
+
+  // ---- dynamic @page so the sheet matches the label ----
+  let pageStyle=document.createElement("style"); document.head.appendChild(pageStyle);
+  function updatePageStyle(){ pageStyle.textContent = "@page{size:"+cfg.w+"mm "+cfg.h+"mm;margin:0}"; }
+
+  // ---- scale the on-screen preview if label is wide (keep panel tidy) ----
+  function fitPreview(){
+    const box=$("zoombox"); box.style.transform="scale(1)";
+    const stageW = box.parentElement.clientWidth - 4;
+    const labelW = $("printArea").offsetWidth;
+    const z = labelW>stageW ? (stageW/labelW) : 1;
+    box.style.transform = "scale("+z.toFixed(3)+")";
+  }
+
+  // ---- inputs ----
+  $("osNum").value = cfg.counter;
+  $("osDate").value = todayISO();
+  $("cfgTel").value=cfg.tel; $("cfgWpp").value=cfg.wpp; $("cfgSite").value=cfg.site;
+  $("cfgHiPB").checked=cfg.hipb; $("cfgCnpj").checked=cfg.showCnpj; $("cfgSiteFoot").checked=cfg.showSite;
+  $("cfgW").value=cfg.w; $("cfgWv").textContent=cfg.w+" mm";
+  $("cfgH").value=cfg.h; $("cfgHv").textContent=cfg.h+" mm";
+  $("cfgScale").value=cfg.scale; $("cfgScalev").textContent=Math.round(cfg.scale*100)+"%";
+  $("cfgPad").value=cfg.pad; $("cfgPadv").textContent="".padStart(cfg.pad,"0")||"0";
+  document.querySelectorAll('#footMode button').forEach(b=>b.setAttribute("aria-pressed", b.dataset.m===cfg.footMode));
+
+  function rerender(){ render(); fitPreview(); }
+
+  $("osNum").addEventListener("input", ()=>{ cfg.counter=parseInt($("osNum").value,10)||1; rerender(); });
+  $("osNum").addEventListener("change", save);
+  $("osDate").addEventListener("input", rerender);
+  $("copies").addEventListener("input", ()=>{ let c=parseInt($("copies").value,10)||1; $("copies").value=Math.min(20,Math.max(1,c)); });
+
+  $("cfgTel").addEventListener("input", e=>{cfg.tel=e.target.value; rerender(); save();});
+  $("cfgWpp").addEventListener("input", e=>{cfg.wpp=e.target.value; rerender(); save();});
+  $("cfgSite").addEventListener("input", e=>{cfg.site=e.target.value; rerender(); save();});
+  $("cfgHiPB").addEventListener("change", e=>{cfg.hipb=e.target.checked; rerender(); save();});
+  $("cfgCnpj").addEventListener("change", e=>{cfg.showCnpj=e.target.checked; rerender(); save();});
+  $("cfgSiteFoot").addEventListener("change", e=>{cfg.showSite=e.target.checked; rerender(); save();});
+  $("cfgW").addEventListener("input", e=>{cfg.w=+e.target.value; $("cfgWv").textContent=cfg.w+" mm"; rerender();});
+  $("cfgH").addEventListener("input", e=>{cfg.h=+e.target.value; $("cfgHv").textContent=cfg.h+" mm"; rerender();});
+  $("cfgW").addEventListener("change", save); $("cfgH").addEventListener("change", save);
+  $("cfgScale").addEventListener("input", e=>{cfg.scale=+e.target.value; $("cfgScalev").textContent=Math.round(cfg.scale*100)+"%"; rerender();});
+  $("cfgScale").addEventListener("change", save);
+  $("cfgPad").addEventListener("input", e=>{cfg.pad=+e.target.value; $("cfgPadv").textContent="".padStart(cfg.pad,"0")||"0"; rerender();});
+  $("cfgPad").addEventListener("change", save);
+
+  document.querySelectorAll('#footMode button').forEach(b=>{
+    b.addEventListener("click", ()=>{
+      cfg.footMode=b.dataset.m;
+      document.querySelectorAll('#footMode button').forEach(x=>x.setAttribute("aria-pressed", x===b));
+      rerender(); save();
+    });
+  });
+
+  $("logoFile").addEventListener("change", e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{ cfg.logo=r.result; rerender(); save(); };
+    r.readAsDataURL(f);
+  });
+  $("resetLogo").addEventListener("click", ()=>{ cfg.logo=null; $("logoFile").value=""; rerender(); save(); });
+  $("resetAll").addEventListener("click", ()=>{
+    if(!confirm("Restaurar todas as configurações para o padrão TedTech?")) return;
+    const keepCounter=cfg.counter;
+    cfg=Object.assign({}, defaults, {counter:keepCounter});
+    localStorage.setItem(LS, JSON.stringify(cfg));
+    location.reload();
+  });
+
+  // ---- print ----
+  function advance(){
+    cfg.counter = (parseInt($("osNum").value,10)||0) + 1;
+    $("osNum").value = cfg.counter;
+    save(); rerender();
+  }
+  $("nextBtn").addEventListener("click", advance);
+
+  $("printBtn").addEventListener("click", ()=>{
+    const copies = Math.min(20, Math.max(1, parseInt($("copies").value,10)||1));
+    const area=$("printArea");
+    // build N copies for a multi-label print run
+    const single = area.querySelector(".label").outerHTML;
+    const original = area.innerHTML;
+    if(copies>1){
+      let html="";
+      for(let i=0;i<copies;i++){ html += single; }
+      area.innerHTML = html;
+    }
+    window.print();
+    // restore single preview + advance counter after dialog closes
+    setTimeout(()=>{ area.innerHTML = original; render(); advance(); fitPreview(); }, 300);
+  });
+
+  // ---- theme toggle ----
+  $("themeBtn").addEventListener("click", ()=>{
+    const cur=document.documentElement.getAttribute("data-theme");
+    const prefDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    let next = cur ? (cur==="dark"?"light":"dark") : (prefDark?"light":"dark");
+    document.documentElement.setAttribute("data-theme", next);
+  });
+
+  window.addEventListener("resize", fitPreview);
+  render(); fitPreview();
+})();
+</script>
+
+</body>
+</html>
