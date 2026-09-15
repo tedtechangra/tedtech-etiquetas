@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
   :root{
     --brand:#0097DA;
@@ -118,7 +119,7 @@
     width:60mm;height:30mm;
     background:#fff;color:#000;
     border:0.2mm solid #000;border-radius:1mm;
-    padding:1.4mm 2mm;
+    padding:1.4mm 3mm;
     display:flex;flex-direction:column;
     font-family:var(--display);
     overflow:hidden;position:relative;
@@ -141,6 +142,15 @@
   .lbl-os .tag{font-family:var(--mono);font-weight:700;font-size:calc(2.3mm * var(--sc))}
   .lbl-date{font-family:var(--mono);font-weight:600;font-size:calc(2.4mm * var(--sc));margin-top:.4mm}
   .lbl-date b{font-weight:800}
+
+  /* ---- QR code da O.S. ---- */
+  .lbl-mid-text{display:flex;flex-direction:column;justify-content:center;align-items:center}
+  .lbl-qr{display:none;flex:0 0 auto;padding-left:1.4mm}
+  .lbl-qr img{display:block;width:calc(12.5mm * var(--sc));height:calc(12.5mm * var(--sc))}
+  .label.has-qr .lbl-mid{flex-direction:row;justify-content:space-between;align-items:center;text-align:left;gap:1mm}
+  .label.has-qr .lbl-mid-text{align-items:flex-start}
+  .label.has-qr .lbl-os{justify-content:flex-start}
+  .label.has-qr .lbl-qr{display:block}
 
   .lbl-foot{
     border-top:0.3mm solid #000;padding-top:0.7mm;
@@ -214,7 +224,7 @@
   </header>
 
   <h1>Etiquetas de Ordem de Serviço</h1>
-  <p class="lead">Preencha o número da O.S. e a data de entrada, confira o preview em tamanho real e imprima na XP-1271U. Logo e telefone entram automaticamente em toda etiqueta.</p>
+  <p class="lead">Preencha o número da O.S. e a data de entrada, confira o preview em tamanho real e imprima na XP-1271U. Logo e telefone entram automaticamente em toda etiqueta. O <b>QR Code</b> abre a O.S. no VHSYS — para funcionar, digite o número real da O.S. do sistema.</p>
 
   <div class="grid">
     <!-- FORM -->
@@ -260,9 +270,12 @@
                 <div class="lbl-cnpj" id="lblCnpj">CNPJ 22.052.313/0001-26</div>
               </div>
               <div class="lbl-mid">
-                <span class="lbl-eyebrow">Ordem de Serviço</span>
-                <div class="lbl-os"><span class="tag">Nº</span><span class="n" id="lblNum">0001</span></div>
-                <div class="lbl-date">Entrada: <b id="lblDate">05/09/2026</b></div>
+                <div class="lbl-mid-text">
+                  <span class="lbl-eyebrow">Ordem de Serviço</span>
+                  <div class="lbl-os"><span class="tag">Nº</span><span class="n" id="lblNum">0001</span></div>
+                  <div class="lbl-date">Entrada: <b id="lblDate">05/09/2026</b></div>
+                </div>
+                <div class="lbl-qr"><img id="lblQr" alt="QR da O.S."></div>
               </div>
               <div class="lbl-foot" id="lblFoot"></div>
             </div>
@@ -293,7 +306,7 @@
         </label>
         <label class="field">
           <span class="lab">WhatsApp</span>
-          <input class="in" id="cfgWpp" value="(24) 98827-6051">
+          <input class="in" id="cfgWpp" value="(24) 3365-1990">
         </label>
         <label class="field">
           <span class="lab">Site (rodapé)</span>
@@ -318,7 +331,13 @@
             <label class="check"><input type="checkbox" id="cfgHiPB" checked> Logo em alto contraste (P&amp;B p/ térmica)</label>
             <label class="check"><input type="checkbox" id="cfgCnpj" checked> Mostrar CNPJ no topo</label>
             <label class="check"><input type="checkbox" id="cfgSiteFoot"> Mostrar site no rodapé</label>
+            <label class="check"><input type="checkbox" id="cfgQr" checked> Mostrar QR Code da O.S. (abre no VHSYS)</label>
           </div>
+        </label>
+
+        <label class="field" style="grid-column:1 / -1">
+          <span class="lab">Link base do VHSYS (o QR abre a O.S. por esse link + número)</span>
+          <input class="in" id="cfgVhsys" value="https://app.vhsys.com.br/index.php?Secao=Servicos.Ordem&amp;Modulo=Servicos#!editar/">
         </label>
 
         <label class="field">
@@ -362,9 +381,10 @@
   const LS = "tedtech_etiquetas_v1";
 
   const defaults = {
-    counter:1, pad:4, tel:"(24) 3365-1990", wpp:"(24) 98827-6051",
-    site:"tedtech.com.br", footMode:"both", hipb:true, showCnpj:true,
-    showSite:false, w:60, h:30, scale:1, logo:null
+    counter:1, pad:4, tel:"(24) 3365-1990", wpp:"(24) 3365-1990",
+    site:"tedtech.com.br", footMode:"wpp", hipb:true, showCnpj:true,
+    showSite:false, w:60, h:30, scale:1, logo:null,
+    showQr:true, vhsys:"https://app.vhsys.com.br/index.php?Secao=Servicos.Ordem&Modulo=Servicos#!editar/"
   };
   let cfg = Object.assign({}, defaults);
   try{ const s = JSON.parse(localStorage.getItem(LS)||"{}"); cfg = Object.assign(cfg, s); }catch(e){}
@@ -390,6 +410,19 @@
     if(cfg.showSite && cfg.site) lines.push(cfg.site);
     lines.forEach(t=>{ const d=document.createElement("div"); d.className="fl"; d.textContent=t; foot.appendChild(d); });
   }
+  // ---- QR code (abre a O.S. no VHSYS) ----
+  function qrText(){ return (cfg.vhsys||"") + (parseInt($("osNum").value,10)||0); }
+  async function ensureQR(){
+    const img=$("lblQr"); if(!img) return;
+    if(!cfg.showQr || !cfg.vhsys){ img.removeAttribute("src"); return; }
+    if(typeof QRCode==="undefined" || !QRCode.toDataURL) return;
+    try{
+      const url = await QRCode.toDataURL(qrText(), { margin:0, width:320, errorCorrectionLevel:"M" });
+      img.src = url;
+      if(img.decode){ try{ await img.decode(); }catch(e){} }
+    }catch(e){}
+  }
+
   function render(){
     const label=$("label");
     label.style.width=cfg.w+"mm";
@@ -407,6 +440,8 @@
       lg.innerHTML = '<span class="lbl-word">Ted<i>Tech</i></span>';
     }
     renderFoot();
+    label.classList.toggle("has-qr", !!(cfg.showQr && cfg.vhsys));
+    ensureQR();
     updatePageStyle();
   }
 
@@ -428,6 +463,7 @@
   $("osDate").value = todayISO();
   $("cfgTel").value=cfg.tel; $("cfgWpp").value=cfg.wpp; $("cfgSite").value=cfg.site;
   $("cfgHiPB").checked=cfg.hipb; $("cfgCnpj").checked=cfg.showCnpj; $("cfgSiteFoot").checked=cfg.showSite;
+  $("cfgQr").checked=cfg.showQr; $("cfgVhsys").value=cfg.vhsys;
   $("cfgW").value=cfg.w; $("cfgWv").textContent=cfg.w+" mm";
   $("cfgH").value=cfg.h; $("cfgHv").textContent=cfg.h+" mm";
   $("cfgScale").value=cfg.scale; $("cfgScalev").textContent=Math.round(cfg.scale*100)+"%";
@@ -447,6 +483,8 @@
   $("cfgHiPB").addEventListener("change", e=>{cfg.hipb=e.target.checked; rerender(); save();});
   $("cfgCnpj").addEventListener("change", e=>{cfg.showCnpj=e.target.checked; rerender(); save();});
   $("cfgSiteFoot").addEventListener("change", e=>{cfg.showSite=e.target.checked; rerender(); save();});
+  $("cfgQr").addEventListener("change", e=>{cfg.showQr=e.target.checked; rerender(); save();});
+  $("cfgVhsys").addEventListener("input", e=>{cfg.vhsys=e.target.value.trim(); rerender(); save();});
   $("cfgW").addEventListener("input", e=>{cfg.w=+e.target.value; $("cfgWv").textContent=cfg.w+" mm"; rerender();});
   $("cfgH").addEventListener("input", e=>{cfg.h=+e.target.value; $("cfgHv").textContent=cfg.h+" mm"; rerender();});
   $("cfgW").addEventListener("change", save); $("cfgH").addEventListener("change", save);
@@ -520,6 +558,7 @@
   async function buildPdfDoc(copies){
     copies = Math.min(20, Math.max(1, parseInt(copies,10)||1));
     render();
+    await ensureQR();
     try{ await document.fonts.ready; }catch(e){}
     const w = cfg.w, h = cfg.h;
     const orient = (w>=h) ? "landscape" : "portrait";
